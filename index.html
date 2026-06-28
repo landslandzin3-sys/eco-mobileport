@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Noite dos Ecos: Mobile Landscape Port</title>
+<title>Noite dos Ecos: Mobile Landscape Port Leve</title>
 <style>
 :root{
   --bg:#03040d;--panel:rgba(7,10,28,.78);--panel2:rgba(11,15,42,.92);--line:rgba(255,255,255,.16);
@@ -293,6 +293,50 @@ canvas#game{
   }
 }
 
+
+/* --- Progressão bloqueada --- */
+.chapterIsland.locked{
+  filter:grayscale(1) brightness(.48)!important;
+  opacity:.62;
+  cursor:not-allowed;
+}
+.chapterIsland.locked:hover{
+  transform:none!important;
+  filter:grayscale(1) brightness(.52)!important;
+}
+.ecoDot.locked{
+  filter:grayscale(1) brightness(.55)!important;
+  opacity:.38;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+.ecoBtn.locked,
+.ecoBtn:disabled{
+  filter:grayscale(1) brightness(.62);
+  opacity:.55;
+  cursor:not-allowed;
+}
+.ecoBtn:disabled:hover{
+  transform:none;
+  background:radial-gradient(circle at 35% 20%,rgba(255,255,255,.18),transparent 34%),rgba(255,255,255,.07);
+}
+.mapLine.locked{
+  filter:grayscale(1);
+  opacity:.2!important;
+}
+
+
+/* --- Mobile performance patch --- */
+@media (pointer:coarse), (max-width:900px){
+  .floatEntity:nth-child(n+6),
+  .seaRune:nth-of-type(n+8),
+  .mapSeaCreature:nth-of-type(n+10){display:none!important}
+  #chapterMap:before{opacity:.12!important;background-size:130px 130px!important}
+  .panelScreen{backdrop-filter:none!important}
+  .panel{box-shadow:0 18px 48px rgba(0,0,0,.45)!important}
+  canvas#game{image-rendering:auto}
+}
+
 </style>
 </head>
 <body>
@@ -369,7 +413,7 @@ const mobileMove={active:false,dx:0,dy:0,mag:0,id:null};let mobileLastDir={x:1,y
 const player={x:100,y:100,vx:0,vy:0,r:13,hp:3,maxHp:3,inv:0,blink:0,shield:0,boost:0,spawnX:100,spawnY:100,carry:null};
 let puzzleUI={active:false,it:null,seq:[],input:[],symbols:[],kind:'',title:''};
 let mapDrag={enabled:false,down:false,x:0,y:0,left:0,top:0,moved:false};
-const saveKey='noite_dos_ecos_void_expansion_save_v1';
+const saveKey='noite_dos_ecos_progressao_bloqueada_v2';
 const defaultSave=()=>({coins:0,purchases:{},equippedPassive:null,equippedShop:[null,null],equippedItems:[null,null,null],enchant:null,progress:{1:0,2:0,3:0,4:0},seen:{},settings:{shake:true,particles:true,assist:true,difficulty:'normal'}});
 let save=loadSave();
 migrateSave();
@@ -511,14 +555,19 @@ function showGameUi(){hud.classList.remove('hidden');abilityBar.classList.remove
 document.querySelectorAll('.menuBtn').forEach(b=>b.onclick=()=>{const s=b.dataset.screen;if(s==='map')openMap();if(s==='shop')openShop();if(s==='enchant')openEnchant();if(s==='book')openBook();if(s==='settings')openSettings()});
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=goMenu);
 $('resumeBtn').onclick=()=>togglePause(false);$('restartEcoBtn').onclick=()=>{togglePause(false);startEco(currentChapter,currentEco)};$('pauseEcoBtn').onclick=()=>openEcoPicker(currentChapter,true);$('quitBtn').onclick=goMenu;$('pauseSettingsBtn').onclick=()=>{togglePause(false);openSettings()};$('respawnBtn').onclick=()=>{deathOverlay.classList.add('hidden');startEco(currentChapter,currentEco)};$('deathMenuBtn').onclick=goMenu;$('nextChapterBtn').onclick=openMap;$('chapterMenuBtn').onclick=goMenu;
-function makeMenuEntities(){const area=$('menuRight');area.innerHTML='';for(let i=0;i<12;i++){const e=document.createElement('div');e.className='floatEntity';const s=35+Math.random()*86;e.style.width=s+'px';e.style.height=s+'px';e.style.left=(Math.random()*70+20)+'%';e.style.top=(Math.random()*85)+'%';e.style.background=i%3===0?'radial-gradient(circle at 35% 30%,#fff,#ff78c8 22%,#13051c 72%)':i%3===1?'radial-gradient(circle at 35% 30%,#fff,#83edff 20%,#06182a 73%)':'radial-gradient(circle at 35% 30%,#fff,#ffe58a 20%,#351b08 74%)';e.style.animationDuration=(14+Math.random()*18)+'s';e.style.animationDelay=(-Math.random()*18)+'s';area.appendChild(e)}}makeMenuEntities();
+function makeMenuEntities(){const area=$('menuRight');area.innerHTML='';for(let i=0;i<5;i++){const e=document.createElement('div');e.className='floatEntity';const s=35+Math.random()*86;e.style.width=s+'px';e.style.height=s+'px';e.style.left=(Math.random()*70+20)+'%';e.style.top=(Math.random()*85)+'%';e.style.background=i%3===0?'radial-gradient(circle at 35% 30%,#fff,#ff78c8 22%,#13051c 72%)':i%3===1?'radial-gradient(circle at 35% 30%,#fff,#83edff 20%,#06182a 73%)':'radial-gradient(circle at 35% 30%,#fff,#ffe58a 20%,#351b08 74%)';e.style.animationDuration=(14+Math.random()*18)+'s';e.style.animationDelay=(-Math.random()*18)+'s';area.appendChild(e)}}makeMenuEntities();
 function openMap(){view='map';state='menu';hideGameUi();showOnly('mapScreen');renderMap();enableMapDrag()}
-function chapterUnlocked(c){return true}
+function chapterUnlocked(c){return c===1 || ((save.progress[c-1]||0) >= chapters[c-1].ecos)}
+function nextEcoForChapter(c){const ch=chapters[c];if(!chapterUnlocked(c))return 1;return Math.min((save.progress[c]||0)+1,ch.ecos)}
+function ecoUnlocked(c,e){return chapterUnlocked(c) && e>=1 && e<=nextEcoForChapter(c)}
+function nextPlayableChapter(){for(let c=1;c<=4;c++){if(chapterUnlocked(c) && (save.progress[c]||0)<chapters[c].ecos)return c}return 4}
+function nextPlayableLabel(){const c=nextPlayableChapter(),e=nextEcoForChapter(c);return 'Cap. '+c+' • Eco '+e}
 function islandShape(c){return ['islandForest','islandClock','islandGarden','islandRuin'][c-1]||'islandForest'}
 function renderMap(){
   const map=$('chapterMap');map.innerHTML='';
   const worldEl=document.createElement('div');worldEl.className='mapWorld';map.appendChild(worldEl);
-  const hint=document.createElement('div');hint.className='mapHint';hint.innerHTML='<b>Mapa das Ilhas</b><p>Arraste o oceano com o mouse. Todos os capítulos e Ecos estão abertos para teste livre.</p>';worldEl.appendChild(hint);
+  const nextInfo=nextPlayableLabel();
+  const hint=document.createElement('div');hint.className='mapHint';hint.innerHTML='<b>Mapa das Ilhas</b><p>Progresso bloqueado: avance em ordem. Próximo destino: <strong>'+nextInfo+'</strong>.</p>';worldEl.appendChild(hint);
   const dragHint=document.createElement('div');dragHint.className='mapDragHint';dragHint.textContent='segure e arraste o mapa';worldEl.appendChild(dragHint);
   const islands={
     1:{x:360,y:1120,w:560,h:360,icon:'☾',deco:'tree'},
@@ -526,22 +575,24 @@ function renderMap(){
     3:{x:1830,y:1140,w:640,h:410,icon:'✿',deco:'flower'},
     4:{x:2290,y:360,w:690,h:450,icon:'⌂',deco:'tower'}
   };
-  for(let i=0;i<16;i++){const r=document.createElement('div');r.className='seaRune';r.style.left=(120+i*185+(i%3)*44)+'px';r.style.top=(160+(i*239)%1540)+'px';r.style.animationDuration=(18+i*1.8)+'s';worldEl.appendChild(r)}
-  for(let i=0;i<24;i++){const e=document.createElement('div');e.className='mapSeaCreature';e.style.left=(60+i*122)+'px';e.style.top=(250+(i*157)%1450)+'px';e.style.opacity=.18+(i%6)*.045;e.style.animationDelay=(-i*1.3)+'s';e.style.animationDuration=(15+(i%7)*2.5)+'s';worldEl.appendChild(e)}
+  for(let i=0;i<6;i++){const r=document.createElement('div');r.className='seaRune';r.style.left=(120+i*185+(i%3)*44)+'px';r.style.top=(160+(i*239)%1540)+'px';r.style.animationDuration=(18+i*1.8)+'s';worldEl.appendChild(r)}
+  for(let i=0;i<8;i++){const e=document.createElement('div');e.className='mapSeaCreature';e.style.left=(60+i*122)+'px';e.style.top=(250+(i*157)%1450)+'px';e.style.opacity=.18+(i%6)*.045;e.style.animationDelay=(-i*1.3)+'s';e.style.animationDuration=(15+(i%7)*2.5)+'s';worldEl.appendChild(e)}
   for(let i=1;i<=3;i++){
     const a=islands[i],b=islands[i+1];const x1=a.x+a.w*.55,y1=a.y+a.h*.52,x2=b.x+b.w*.48,y2=b.y+b.h*.5;const dx=x2-x1,dy=y2-y1;
-    const line=document.createElement('div');line.className='mapLine';line.style.left=x1+'px';line.style.top=y1+'px';line.style.width=Math.hypot(dx,dy)+'px';line.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;worldEl.appendChild(line)
+    const line=document.createElement('div');line.className='mapLine'+(chapterUnlocked(i+1)?'':' locked');line.style.left=x1+'px';line.style.top=y1+'px';line.style.width=Math.hypot(dx,dy)+'px';line.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;worldEl.appendChild(line)
   }
   for(let c=1;c<=4;c++){
-    const data=islands[c],ch=chapters[c],done=save.progress[c]||0;
-    const island=document.createElement('div');island.className='chapterIsland '+islandShape(c);island.style.left=data.x+'px';island.style.top=data.y+'px';island.style.width=data.w+'px';island.style.height=data.h+'px';
-    island.innerHTML=`<div class="islandInfo"><b>${data.icon}</b><strong>Capítulo ${c}</strong><span>${ch.name}<br>${ch.desc}</span></div><div class="islandProgress">${done}/${ch.ecos} ECOS</div>`;
-    island.onclick=()=>{if(!mapDrag.moved)openEcoPicker(c,false)};worldEl.appendChild(island);
-    for(let k=0;k<(c===4?13:11);k++){const dco=document.createElement('div');dco.className='islandDetail '+data.deco;dco.style.left=(data.x+70+((k*91)%(data.w-140)))+'px';dco.style.top=(data.y+92+((k*57)%(data.h-160)))+'px';dco.style.transform=`rotate(${(k*31)%35-18}deg) scale(${.72+(k%5)*.08})`;worldEl.appendChild(dco)}
+    const data=islands[c],ch=chapters[c],done=save.progress[c]||0,unlocked=chapterUnlocked(c);
+    const island=document.createElement('div');island.className='chapterIsland '+islandShape(c)+(unlocked?'':' locked');island.style.left=data.x+'px';island.style.top=data.y+'px';island.style.width=data.w+'px';island.style.height=data.h+'px';
+    const progText=unlocked?(done+'/'+ch.ecos+' ECOS'):'BLOQUEADO';
+    island.innerHTML=`<div class="islandInfo"><b>${unlocked?data.icon:'🔒'}</b><strong>Capítulo ${c}</strong><span>${ch.name}<br>${unlocked?ch.desc:'Complete o capítulo anterior para liberar.'}</span></div><div class="islandProgress">${progText}</div>`;
+    island.onclick=()=>{if(mapDrag.moved)return;if(unlocked)openEcoPicker(c,false);else toast('Capítulo bloqueado')};worldEl.appendChild(island);
+    for(let k=0;k<(c===4?6:5);k++){const dco=document.createElement('div');dco.className='islandDetail '+data.deco;dco.style.left=(data.x+70+((k*91)%(data.w-140)))+'px';dco.style.top=(data.y+92+((k*57)%(data.h-160)))+'px';dco.style.transform=`rotate(${(k*31)%35-18}deg) scale(${.72+(k%5)*.08})`;worldEl.appendChild(dco)}
     const cx=data.x+data.w/2,cy=data.y+data.h/2,radx=data.w*.45,rady=data.h*.41;
     for(let e=1;e<=ch.ecos;e++){
       const a=-Math.PI/2+(e-1)/ch.ecos*Math.PI*2;
-      const dot=document.createElement('div');dot.className='ecoDot'+(e<=done?' done':'');dot.title='Capítulo '+c+' • Eco '+e;dot.style.left=(cx+Math.cos(a)*radx)+'px';dot.style.top=(cy+Math.sin(a)*rady)+'px';dot.onclick=(ev)=>{ev.stopPropagation();if(!mapDrag.moved)startEco(c,e)};worldEl.appendChild(dot)
+      const can=ecoUnlocked(c,e);
+      const dot=document.createElement('div');dot.className='ecoDot'+(e<=done?' done':'')+(can?'':' locked');dot.title='Capítulo '+c+' • Eco '+e+(can?'':' • bloqueado');dot.style.left=(cx+Math.cos(a)*radx)+'px';dot.style.top=(cy+Math.sin(a)*rady)+'px';dot.onclick=(ev)=>{ev.stopPropagation();if(mapDrag.moved)return;if(can)startEco(c,e);else toast('Eco bloqueado')};worldEl.appendChild(dot)
     }
   }
   setTimeout(()=>{map.scrollLeft=880;map.scrollTop=360},0)
@@ -567,22 +618,26 @@ function ensureEcoPicker(){
 }
 function openEcoPicker(c,fromPause=false){
   currentChapter=c;ecoPickerFromPause=fromPause;
-  const modal=ensureEcoPicker(),ch=chapters[c],done=save.progress[c]||0;
+  const modal=ensureEcoPicker(),ch=chapters[c],done=save.progress[c]||0,unlocked=chapterUnlocked(c);
   $('ecoPickerTitle').textContent='Capítulo '+c;
-  $('ecoPickerDesc').textContent=ch.name+' — escolha qualquer Eco deste capítulo. Progresso salvo: '+done+'/'+ch.ecos+'.';
-  $('ecoNextBtn').onclick=()=>{let next=Math.min(done+1,ch.ecos);if(next<1)next=1;startEcoFromPicker(c,next)};
+  $('ecoPickerDesc').textContent=unlocked?(ch.name+' — avance em ordem. Progresso salvo: '+done+'/'+ch.ecos+'.'):(ch.name+' — bloqueado. Complete o capítulo anterior.');
+  $('ecoNextBtn').disabled=!unlocked;
+  $('ecoFirstBtn').disabled=!unlocked;
+  $('ecoNextBtn').onclick=()=>{const next=nextEcoForChapter(c);startEcoFromPicker(c,next)};
   $('ecoFirstBtn').onclick=()=>startEcoFromPicker(c,1);
   const grid=$('ecoGrid');grid.innerHTML='';
   for(let e=1;e<=ch.ecos;e++){
-    const btn=document.createElement('button');btn.className='ecoBtn'+(e<=done?' done':'');
+    const can=ecoUnlocked(c,e);
+    const btn=document.createElement('button');btn.className='ecoBtn'+(e<=done?' done':'')+(can?'':' locked');btn.disabled=!can;
     const boss=isBossEco(c,e);const reward=10+c*3+(save.settings.difficulty==='pesadelo'?6:0);
-    btn.innerHTML='<span class="big">'+(boss?'☠':'◆')+'</span>Eco '+e+(boss?'<span class="boss">BOSS</span>':'')+(e<=done?'<em>concluído</em>':'<em>+'+reward+' VC</em>');
+    const label=e<=done?'<em>concluído</em>':(can?'<em>próximo +' + reward + ' VC</em>':'<em>bloqueado</em>');
+    btn.innerHTML='<span class="big">'+(boss?'☠':(can?'◆':'🔒'))+'</span>Eco '+e+(boss?'<span class="boss">BOSS</span>':'')+label;
     btn.onclick=()=>startEcoFromPicker(c,e);grid.appendChild(btn)
   }
   modal.classList.remove('hidden')
 }
 function closeEcoPicker(){const modal=$('ecoPickerModal');if(modal)modal.classList.add('hidden')}
-function startEcoFromPicker(c,e){closeEcoPicker();pauseOverlay.classList.add('hidden');startEco(c,e)}
+function startEcoFromPicker(c,e){if(!ecoUnlocked(c,e)){toast('Eco bloqueado');return}closeEcoPicker();pauseOverlay.classList.add('hidden');startEco(c,e)}
 let shopTab='passive';
 function openShop(tab='passive'){shopTab=tab;view='shop';hideGameUi();showOnly('shopScreen');const h=document.querySelector('#shopScreen .panelHead h2');if(h)h.textContent='Loja do Vazio';renderShop(shopTab)}
 function reqText(req){return !req?'Disponível':'Requer: Cap. '+req.c+' Eco '+req.e}
@@ -616,7 +671,7 @@ addEventListener('touchmove',e=>{if(state==='playing')e.preventDefault()},{passi
 addEventListener('gesturestart',e=>e.preventDefault&&e.preventDefault(),{passive:false});
 function togglePause(on){if(state!=='playing'&&state!=='paused')return;if(on&&puzzleUI.active)closePuzzleUI(false);state=on?'paused':'playing';pauseOverlay.classList.toggle('hidden',!on)}
 function startChapter(c){openEcoPicker(c,false)}
-function startEco(c,e){currentChapter=c;currentEco=e;state='playing';view='game';screens.forEach(s=>$(s).classList.add('hidden'));deathOverlay.classList.add('hidden');chapterOverlay.classList.add('hidden');showGameUi();cds={a:[0,0,0],shop:[0,0],passive:0};player.maxHp=3+hpBonus();player.hp=player.maxHp;player.inv=1.1;player.carry=null;slow=0;forcedStop=0;stopLocked=false;stopGlow=0;errorGlitch=0;reveal=0;thread=0;torch=0;resetAllSeeingEye(c,e);generateLevel(c,e);if(revealAssist()){reveal=2.5;findAriadneTarget()}renderAbilityBar();flash=.45;}
+function startEco(c,e){if(!ecoUnlocked(c,e)){toast('Eco bloqueado');return false}currentChapter=c;currentEco=e;state='playing';view='game';screens.forEach(s=>$(s).classList.add('hidden'));deathOverlay.classList.add('hidden');chapterOverlay.classList.add('hidden');showGameUi();cds={a:[0,0,0],shop:[0,0],passive:0};player.maxHp=3+hpBonus();player.hp=player.maxHp;player.inv=1.1;player.carry=null;slow=0;forcedStop=0;stopLocked=false;stopGlow=0;errorGlitch=0;reveal=0;thread=0;torch=0;resetAllSeeingEye(c,e);generateLevel(c,e);if(revealAssist()){reveal=2.5;findAriadneTarget()}renderAbilityBar();flash=.45;return true}
 
 function eyeDelay(){return 1+itemStat('eye')}
 function resetAllSeeingEye(c,e){screenEye={timer:(c===2||c===3)?((42+Math.random()*42+Math.max(0,6-e)*2.2)*eyeDelay()):999,phase:'idle',x:0,y:0,t:0,openChecked:false}}
@@ -627,7 +682,7 @@ function updateAllSeeingEye(dt){if(!(currentChapter===2||currentChapter===3)||!l
 function isBossEco(c,e){return (c===1&&e===6)||(c===2&&e===10)||(c===3&&e===10)||(c===4&&(e===6||e===12))}
 function colors(){return chapters[currentChapter].colors}
 function generateLevel(c,e){const r=rng(9900+c*1000+e*73);const ruin=c===4;world.w=ruin?3600+(e%3)*280:1700+c*230+e*70;world.h=ruin?2350+(e%2)*220:1050+c*160+e*45;level={walls:[],cracks:[],orbs:[],enemies:[],puzzles:[],seals:[],portal:{x:0,y:0,r:27,active:false},boss:null,exitCorner:0,orbCount:0,puzzleDone:0,puzzleNeed:0,bossPhase:0,clear:false,chapter:c,eco:e,biome:chapters[c].place};stars=[];motes=[];rings=[];vfx=[];projectiles=[];texts=[];makeSky(r);if(ruin)makeRuin(r,e);else makeOpenMap(r,c,e);placePlayer(r);placeOrbs(r,c,e);placeEnemies(r,c,e);if(isBossEco(c,e))makeBoss(r,c,e);updateCamera(1);updateHud();}
-function makeSky(r){for(let i=0;i<180;i++)stars.push({x:R(r,0,world.w),y:R(r,0,world.h),s:R(r,.5,2.2),z:R(r,.2,1),p:R(r,0,6.28)});for(let i=0;i<110;i++)motes.push({x:R(r,0,world.w),y:R(r,0,world.h),vx:R(r,-.18,.18),vy:R(r,-.15,.15),r:R(r,1,3),a:R(r,.08,.28),h:R(r,170,330)})}
+function makeSky(r){for(let i=0;i<70;i++)stars.push({x:R(r,0,world.w),y:R(r,0,world.h),s:R(r,.5,2.0),z:R(r,.2,1),p:R(r,0,6.28)});for(let i=0;i<34;i++)motes.push({x:R(r,0,world.w),y:R(r,0,world.h),vx:R(r,-.14,.14),vy:R(r,-.11,.11),r:R(r,1,2.5),a:R(r,.06,.18),h:R(r,170,330)})}
 function makeOpenMap(r,c,e){const n=7+e+Math.floor(c*1.4);for(let i=0;i<n;i++){const vert=r()>.5,w=vert?R(r,24,44):R(r,130,330),h=vert?R(r,120,330):R(r,24,44),x=R(r,110,world.w-110-w),y=R(r,100,world.h-100-h);level.walls.push({x,y,w,h,gate:r()>.72,p:R(r,0,6.28)})}const corners=[[120,120],[world.w-120,120],[120,world.h-120],[world.w-120,world.h-120]];const ex=corners[Math.floor(r()*4)];level.portal.x=ex[0];level.portal.y=ex[1];}
 function makeRuin(r,e){
 level.rooms=[];level.props=[];level.cracks=[];level.seals=[];level.interactHint=null;
@@ -866,7 +921,7 @@ if(b.type==='ruinCore'){b.x=world.w/2+Math.cos(time*.45)*90;b.y=world.h/2+Math.s
 const sp=Math.hypot(b.vx||0,b.vy||0);if(sp>115){b.vx=b.vx/sp*115;b.vy=b.vy/sp*115}b.x+=(b.vx||0)*dt;b.y+=(b.vy||0)*dt;if(b.vx!==undefined){b.vx*=Math.pow(.72,dt);b.vy*=Math.pow(.72,dt)}if(d(player.x,player.y,b.x,b.y)<player.r+b.r*.78)damage();if(b.hp<=0)bossDefeated()}
 function updateProjectiles(dt){for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.type==='crescent'){hitEnemies(p.x,p.y,p.r+20,p.dmg,.8,false)}if(p.type==='glass'&&p.y>(p.targetY||world.h+50)){hitEnemies(p.x,p.y,58,p.dmg,1,false);rings.push({x:p.x,y:p.y,r:22,a:1,kind:'cyan'});p.life=0}if(p.type==='mine'){p.r+=Math.sin(time*4)*.02;if(d(player.x,player.y,p.x,p.y)<player.r+p.r+8){damage();rings.push({x:p.x,y:p.y,r:32,a:1,kind:'pink'});p.life=0}}if(['clock','stone','void','glass','spark','rune'].includes(p.type)&&d(player.x,player.y,p.x,p.y)<player.r+p.r){damage();p.life=0}let hitWall=false;for(const w of level.walls)if(rectCircle(p.x,p.y,p.r,w)){hitWall=true;break}if(p.life<=0||p.x<-80||p.y<-80||p.x>world.w+80||p.y>world.h+80||hitWall)projectiles.splice(i,1)}}
 function updateVFX(dt){for(let i=vfx.length-1;i>=0;i--){const v=vfx[i];v.t+=dt;v.a-=dt/(v.dur||1);v.r+=dt*(v.type==='blackhole'?28:100);if(v.type==='blackhole'){for(const e of level.enemies){if(e.hp>0&&d(v.x,v.y,e.x,e.y)<190){const dx=v.x-e.x,dy=v.y-e.y,l=Math.hypot(dx,dy)||1;e.vx+=dx/l*380*dt;e.vy+=dy/l*380*dt;e.hp-=dt*.55}}if(level.boss&&!level.boss.shield&&d(v.x,v.y,level.boss.x,level.boss.y)<220)level.boss.hp-=dt*.35}if(v.vx){v.x+=v.vx*dt;v.y+=v.vy*dt}if(v.a<=0)vfx.splice(i,1)}for(let i=rings.length-1;i>=0;i--){const r=rings[i];r.a-=dt*.85;r.r+=dt*120;if(r.a<=0)rings.splice(i,1)}for(let i=texts.length-1;i>=0;i--){texts[i].a-=dt*.8;texts[i].y+=texts[i].vy*dt;if(texts[i].a<=0)texts.splice(i,1)}}
-function checkClear(){if(level.clear)return;const orbsDone=level.orbs.every(o=>o.taken);const puzzlesDone=currentChapter!==4||level.puzzleDone>=level.puzzleNeed;if(!level.boss&&orbsDone&&puzzlesDone){level.portal.active=true;rings.push({x:level.portal.x,y:level.portal.y,r:30,a:1,kind:'gold'});toast('Portal aberto')}if(level.portal.active&&d(player.x,player.y,level.portal.x,level.portal.y)<Math.max(76,level.portal.r+player.r+42))ecoComplete()}
+function checkClear(){if(level.clear)return;const orbsDone=level.orbs.every(o=>o.taken);const puzzlesDone=currentChapter!==4||level.puzzleDone>=level.puzzleNeed;if(!level.boss&&!level.portal.active&&orbsDone&&puzzlesDone){level.portal.active=true;rings.push({x:level.portal.x,y:level.portal.y,r:30,a:1,kind:'gold'});toast('Portal aberto')}if(level.portal.active&&d(player.x,player.y,level.portal.x,level.portal.y)<Math.max(76,level.portal.r+player.r+42))ecoComplete()}
 function ecoComplete(){if(level.clear)return;level.clear=true;const reward=10+currentChapter*3+(save.settings.difficulty==='pesadelo'?6:0);addCoins(reward,'eco');save.progress[currentChapter]=Math.max(save.progress[currentChapter],currentEco);saveGame();if(currentEco>=chapters[currentChapter].ecos){state='chapterDone';hideGameUi();$('chapterDoneTitle').textContent='Capítulo '+currentChapter+' completo';$('chapterDoneText').textContent='Você atravessou '+chapters[currentChapter].name+' e recebeu '+reward+' Void Coins pelo último Eco.';chapterOverlay.classList.remove('hidden')}else{startEco(currentChapter,currentEco+1)}}
 function bossDefeated(){const b=level.boss;if(!b||b.dead)return;b.dead=true;markSeen(b.type==='ruinCore'?'core':b.type==='scribeBoss'?'scribe':currentChapter===2?'clockling':currentChapter===3?'garden':'shade');addCoins(currentChapter===4?70:50,'boss');toast('Boss derrotado + Void Coins');level.boss=null;level.portal.active=true;rings.push({x:level.portal.x,y:level.portal.y,r:45,a:1,kind:'gold'});checkClear()}
 function updateCamera(force=0){const tx=clamp(player.x-VW/2,0,Math.max(0,world.w-VW)),ty=clamp(player.y-VH/2,0,Math.max(0,world.h-VH));cam.x=lerp(cam.x,tx,force?1:.08);cam.y=lerp(cam.y,ty,force?1:.08)}
